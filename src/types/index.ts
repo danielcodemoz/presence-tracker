@@ -28,4 +28,29 @@ export interface AppState {
   isDarkMode: boolean;
 }
 
+export interface Account {
+  id: string;
+  username: string;
+  password: string;
+  role: 'admin' | 'user';
+  createdAt: string;
+  createdBy?: string;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  currentUser: Account | null;
+  accounts: Account[];
+}
+
+export interface AppSettings {
+  reportTitle: string;
+  language: 'en' | 'pt';
+  theme: 'light' | 'dark' | 'blue' | 'green' | 'purple';
+}
+
 export type CellStatus = 'present' | 'absent' | null;
+
+export type Language = 'en' | 'pt';
+
+export type Theme = 'light' | 'dark' | 'blue' | 'green' | 'purple';

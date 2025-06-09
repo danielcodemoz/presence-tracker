@@ -1,46 +1,117 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { User, PresenceData, Excuse, CellStatus } from './types';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { User, PresenceData, Excuse, CellStatus, Account, AuthState, AppSettings } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { getDaysInMonth, getMonthName, getDayOfWeek } from './utils/dateUtils';
 import { exportToCSV, exportToExcel, exportToPDF } from './utils/exportUtils';
+import { useTranslation } from './utils/translations';
+import { getThemeClasses } from './utils/themes';
 import BulkNameInput from './components/BulkNameInput';
-import ThemeToggle from './components/ThemeToggle';
 import CalendarSelector from './components/CalendarSelector';
 import PresenceTable from './components/PresenceTable';
 import Analytics from './components/Analytics';
 import ExcuseManager from './components/ExcuseManager';
+import BulkExcuseManager from './components/BulkExcuseManager';
+import AuthModal from './components/AuthModal';
+import AccountManagement from './components/AccountManagement';
+import Settings from './components/Settings';
 import { 
   Users, 
   Calendar, 
   BarChart3, 
-  Settings, 
+  Settings as SettingsIcon, 
   Download,
   Search,
-  Filter,
   Plus,
   FileText,
   Table,
-  FileSpreadsheet
+  FileSpreadsheet,
+  LogOut,
+  Shield,
+  User as UserIcon
 } from 'lucide-react';
 
 function App() {
-  const [users, setUsers] = useLocalStorage<User[]>('presence-users', []);
-  const [selectedDays, setSelectedDays] = useLocalStorage<number[]>('selected-days', []);
-  const [presenceData, setPresenceData] = useLocalStorage<PresenceData>('presence-data', {});
-  const [excuses, setExcuses] = useLocalStorage<Excuse[]>('excuses', []);
-  const [currentMonth, setCurrentMonth] = useLocalStorage('current-month', new Date().getMonth());
-  const [currentYear, setCurrentYear] = useLocalStorage('current-year', new Date().getFullYear());
-  const [isDarkMode, setIsDarkMode] = useLocalStorage('dark-mode', false);
+  // Authentication state
+  const [authState, setAuthState] = useLocalStorage<AuthState>('auth-state', {
+    isAuthenticated: false,
+    currentUser: null,
+    accounts: [
+      {
+        id: 'admin-default',
+        username: 'admin',
+        password: 'admin',
+        role: 'admin',
+        createdAt: new Date().toISOString()
+      }
+    ]
+  });
+
+  // App settings
+  const [settings, setSettings] = useLocalStorage<AppSettings>('app-settings', {
+    reportTitle: '',
+    language: 'en',
+    theme: 'light'
+  });
+
+  // User data (scoped to current user)
+  const userDataKey = authState.currentUser ? `user-data-${authState.currentUser.id}` : 'user-data-guest';
+  const [users, setUsers] = useLocalStorage<User[]>(`${userDataKey}-users`, []);
+  const [selectedDays, setSelectedDays] = useLocalStorage<number[]>(`${userDataKey}-selected-days`, []);
+  const [presenceData, setPresenceData] = useLocalStorage<PresenceData>(`${userDataKey}-presence-data`, {});
+  const [excuses, setExcuses] = useLocalStorage<Excuse[]>(`${userDataKey}-excuses`, []);
+  const [currentMonth, setCurrentMonth] = useLocalStorage(`${userDataKey}-current-month`, new Date().getMonth());
+  const [currentYear, setCurrentYear] = useLocalStorage(`${userDataKey}-current-year`, new Date().getFullYear());
   
-  const [activeTab, setActiveTab] = useState<'users' | 'calendar' | 'table' | 'analytics' | 'excuses'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'calendar' | 'table' | 'analytics' | 'excuses' | 'accounts' | 'settings'>('users');
   const [searchTerm, setSearchTerm] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(!authState.isAuthenticated);
+
+  const t = useTranslation(settings.language);
+  const themeClasses = getThemeClasses(settings.theme);
+
+  // Update auth modal visibility when auth state changes
+  useEffect(() => {
+    setShowAuthModal(!authState.isAuthenticated);
+  }, [authState.isAuthenticated]);
 
   const filteredUsers = useMemo(() => {
     return users.filter(user => 
       user.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [users, searchTerm]);
+
+  const handleLogin = useCallback((username: string, password: string): boolean => {
+    const account = authState.accounts.find(acc => 
+      acc.username === username && acc.password === password
+    );
+    
+    if (account) {
+      setAuthState({
+        ...authState,
+        isAuthenticated: true,
+        currentUser: account
+      });
+      return true;
+    }
+    return false;
+  }, [authState, setAuthState]);
+
+  const handleLogout = useCallback(() => {
+    setAuthState({
+      ...authState,
+      isAuthenticated: false,
+      currentUser: null
+    });
+    setActiveTab('users');
+  }, [authState, setAuthState]);
+
+  const handleAccountsChange = useCallback((accounts: Account[]) => {
+    setAuthState({
+      ...authState,
+      accounts
+    });
+  }, [authState, setAuthState]);
 
   const handleBulkNameSubmit = useCallback((names: string[]) => {
     const newUsers: User[] = names.map(name => ({
@@ -92,30 +163,49 @@ function App() {
     }));
   }, [excuses, currentMonth, currentYear, presenceData, setPresenceData, setUsers]);
 
-  const handleExportCSV = () => exportToCSV(filteredUsers, presenceData, selectedDays);
-  const handleExportExcel = () => exportToExcel(filteredUsers, presenceData, selectedDays);
-  const handleExportPDF = () => exportToPDF(filteredUsers, presenceData, selectedDays);
+  const handleExportCSV = () => exportToCSV(filteredUsers, presenceData, selectedDays, settings.reportTitle);
+  const handleExportExcel = () => exportToExcel(filteredUsers, presenceData, selectedDays, settings.reportTitle);
+  const handleExportPDF = () => exportToPDF(filteredUsers, presenceData, selectedDays, settings.reportTitle);
 
   const tabs = [
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'table', label: 'Tracking', icon: Table },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'excuses', label: 'Excuses', icon: Settings }
+    { id: 'users', label: t('users'), icon: Users },
+    { id: 'calendar', label: t('calendar'), icon: Calendar },
+    { id: 'table', label: t('tracking'), icon: Table },
+    { id: 'analytics', label: t('analytics'), icon: BarChart3 },
+    { id: 'excuses', label: t('excuses'), icon: Shield },
+    ...(authState.currentUser?.role === 'admin' ? [{ id: 'accounts', label: t('accountManagement'), icon: UserIcon }] : []),
+    { id: 'settings', label: t('settings'), icon: SettingsIcon }
   ];
 
-  const themeClasses = isDarkMode 
-    ? 'bg-gray-900 text-white' 
-    : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-900';
+  if (!authState.isAuthenticated) {
+    return (
+      <div className={`min-h-screen transition-all duration-300 ${themeClasses.background} ${themeClasses.text}`}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-6">
+              <Users className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold mb-2">{t('presenceTracker')}</h1>
+            <p className={`mb-8 ${themeClasses.muted}`}>
+              {settings.language === 'en' ? 'Please sign in to continue' : 'Faça login para continuar'}
+            </p>
+          </div>
+        </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => {}}
+          onLogin={handleLogin}
+          language={settings.language}
+          theme={settings.theme}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className={`min-h-screen transition-all duration-300 ${themeClasses}`}>
+    <div className={`min-h-screen transition-all duration-300 ${themeClasses.background} ${themeClasses.text}`}>
       {/* Header */}
-      <header className={`sticky top-0 z-50 backdrop-blur-md border-b transition-all duration-300 ${
-        isDarkMode 
-          ? 'bg-gray-800/80 border-gray-700' 
-          : 'bg-white/80 border-gray-200'
-      }`}>
+      <header className={`sticky top-0 z-50 backdrop-blur-md border-b transition-all duration-300 ${themeClasses.header} ${themeClasses.border}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -124,11 +214,11 @@ function App() {
                   <Users className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Presence Tracker
+                  {t('presenceTracker')}
                 </h1>
               </div>
               <div className="hidden md:flex items-center space-x-1">
-                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className={`text-sm ${themeClasses.muted}`}>
                   {getMonthName(currentMonth)} {currentYear}
                 </span>
               </div>
@@ -137,19 +227,13 @@ function App() {
             <div className="flex items-center space-x-4">
               {/* Search */}
               <div className="relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`} />
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${themeClasses.muted}`} />
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder={`${t('search')} ${t('users').toLowerCase()}...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`pl-10 pr-4 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  }`}
+                  className={`pl-10 pr-4 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${themeClasses.input}`}
                 />
               </div>
 
@@ -157,62 +241,60 @@ function App() {
               <div className="relative">
                 <button
                   onClick={() => setShowExportMenu(!showExportMenu)}
-                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                    isDarkMode 
-                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
-                      : 'bg-white hover:bg-gray-50 text-gray-700 shadow-sm'
-                  }`}
+                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${themeClasses.card} ${themeClasses.cardHover} shadow-sm`}
                 >
                   <Download className="w-5 h-5" />
                 </button>
                 
                 {showExportMenu && (
-                  <div className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg border z-10 ${
-                    isDarkMode 
-                      ? 'bg-gray-800 border-gray-700' 
-                      : 'bg-white border-gray-200'
-                  }`}>
+                  <div className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg border z-10 ${themeClasses.card} ${themeClasses.border}`}>
                     <div className="py-1">
                       <button
                         onClick={() => { handleExportCSV(); setShowExportMenu(false); }}
-                        className={`flex items-center w-full px-4 py-2 text-sm hover:bg-opacity-50 transition-colors ${
-                          isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                        }`}
+                        className={`flex items-center w-full px-4 py-2 text-sm hover:bg-opacity-50 transition-colors ${themeClasses.cardHover}`}
                       >
                         <FileText className="w-4 h-4 mr-2" />
-                        Export CSV
+                        {t('exportCSV')}
                       </button>
                       <button
                         onClick={() => { handleExportExcel(); setShowExportMenu(false); }}
-                        className={`flex items-center w-full px-4 py-2 text-sm hover:bg-opacity-50 transition-colors ${
-                          isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                        }`}
+                        className={`flex items-center w-full px-4 py-2 text-sm hover:bg-opacity-50 transition-colors ${themeClasses.cardHover}`}
                       >
                         <FileSpreadsheet className="w-4 h-4 mr-2" />
-                        Export Excel
+                        {t('exportExcel')}
                       </button>
                       <button
                         onClick={() => { handleExportPDF(); setShowExportMenu(false); }}
-                        className={`flex items-center w-full px-4 py-2 text-sm hover:bg-opacity-50 transition-colors ${
-                          isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                        }`}
+                        className={`flex items-center w-full px-4 py-2 text-sm hover:bg-opacity-50 transition-colors ${themeClasses.cardHover}`}
                       >
                         <FileText className="w-4 h-4 mr-2" />
-                        Export PDF
+                        {t('exportPDF')}
                       </button>
                     </div>
                   </div>
                 )}
               </div>
 
-              <ThemeToggle isDarkMode={isDarkMode} onToggle={() => setIsDarkMode(!isDarkMode)} />
+              {/* User Menu */}
+              <div className="flex items-center space-x-2">
+                <span className={`text-sm ${themeClasses.muted}`}>
+                  {authState.currentUser?.username}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${themeClasses.card} ${themeClasses.cardHover} shadow-sm`}
+                  title={t('signOut')}
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       {/* Navigation Tabs */}
-      <nav className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <nav className={`border-b ${themeClasses.nav}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 overflow-x-auto">
             {tabs.map(({ id, label, icon: Icon }) => (
@@ -222,7 +304,7 @@ function App() {
                 className={`flex items-center space-x-2 py-4 px-2 border-b-2 transition-all duration-200 whitespace-nowrap ${
                   activeTab === id
                     ? 'border-blue-500 text-blue-600'
-                    : `border-transparent ${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`
+                    : `border-transparent ${themeClasses.muted} hover:text-current`
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -237,41 +319,37 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'users' && (
           <div className="space-y-6">
-            <div className={`rounded-xl shadow-lg border transition-all duration-300 ${
-              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
+            <div className={`rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
               <div className="p-6">
                 <h2 className="text-2xl font-bold mb-6 flex items-center">
                   <Users className="w-6 h-6 mr-2 text-blue-500" />
-                  User Management
+                  {t('userManagement')}
                 </h2>
-                <BulkNameInput onSubmit={handleBulkNameSubmit} isDarkMode={isDarkMode} />
+                <BulkNameInput 
+                  onSubmit={handleBulkNameSubmit} 
+                  language={settings.language}
+                  theme={settings.theme}
+                />
               </div>
             </div>
 
             {/* Users List */}
             {filteredUsers.length > 0 && (
-              <div className={`rounded-xl shadow-lg border transition-all duration-300 ${
-                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-              }`}>
+              <div className={`rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
                 <div className="p-6">
                   <h3 className="text-lg font-semibold mb-4">
-                    Registered Users ({filteredUsers.length})
+                    {t('registeredUsers')} ({filteredUsers.length})
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredUsers.map((user) => (
                       <div
                         key={user.id}
-                        className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
-                          isDarkMode 
-                            ? 'bg-gray-700 border-gray-600 hover:border-gray-500' 
-                            : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${themeClasses.card} ${themeClasses.border} ${themeClasses.cardHover}`}
                       >
                         <div className="font-medium mb-2">{user.name}</div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-green-500">Present: {user.totalPresent}</span>
-                          <span className="text-red-500">Absent: {user.totalAbsent}</span>
+                          <span className="text-green-500">{t('present')}: {user.totalPresent}</span>
+                          <span className="text-red-500">{t('absent')}: {user.totalAbsent}</span>
                         </div>
                       </div>
                     ))}
@@ -290,7 +368,8 @@ function App() {
             currentYear={currentYear}
             onMonthChange={setCurrentMonth}
             onYearChange={setCurrentYear}
-            isDarkMode={isDarkMode}
+            language={settings.language}
+            theme={settings.theme}
           />
         )}
 
@@ -303,7 +382,8 @@ function App() {
             currentMonth={currentMonth}
             currentYear={currentYear}
             onPresenceToggle={handlePresenceToggle}
-            isDarkMode={isDarkMode}
+            language={settings.language}
+            theme={settings.theme}
           />
         )}
 
@@ -312,16 +392,46 @@ function App() {
             users={filteredUsers}
             presenceData={presenceData}
             selectedDays={selectedDays}
-            isDarkMode={isDarkMode}
+            language={settings.language}
+            theme={settings.theme}
           />
         )}
 
         {activeTab === 'excuses' && (
-          <ExcuseManager
-            users={users}
-            excuses={excuses}
-            onExcusesChange={setExcuses}
-            isDarkMode={isDarkMode}
+          <div className="space-y-6">
+            <BulkExcuseManager
+              users={users}
+              excuses={excuses}
+              onExcusesChange={setExcuses}
+              language={settings.language}
+              theme={settings.theme}
+            />
+            <ExcuseManager
+              users={users}
+              excuses={excuses}
+              onExcusesChange={setExcuses}
+              language={settings.language}
+              theme={settings.theme}
+            />
+          </div>
+        )}
+
+        {activeTab === 'accounts' && authState.currentUser && (
+          <AccountManagement
+            accounts={authState.accounts}
+            currentUser={authState.currentUser}
+            onAccountsChange={handleAccountsChange}
+            language={settings.language}
+            theme={settings.theme}
+          />
+        )}
+
+        {activeTab === 'settings' && (
+          <Settings
+            settings={settings}
+            onSettingsChange={setSettings}
+            language={settings.language}
+            theme={settings.theme}
           />
         )}
       </main>

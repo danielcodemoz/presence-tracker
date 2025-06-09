@@ -16,16 +16,22 @@ import {
 } from 'recharts';
 import { User, PresenceData } from '../types';
 import { TrendingUp, Users, Calendar, Award } from 'lucide-react';
+import { useTranslation } from '../utils/translations';
+import { getThemeClasses } from '../utils/themes';
 
 interface AnalyticsProps {
   users: User[];
   presenceData: PresenceData;
   selectedDays: number[];
-  isDarkMode: boolean;
+  language: 'en' | 'pt';
+  theme: string;
 }
 
-const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays, isDarkMode }) => {
+const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays, language, theme }) => {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+  
+  const t = useTranslation(language);
+  const themeClasses = getThemeClasses(theme);
 
   // Calculate user attendance data
   const userAttendanceData = users.map(user => {
@@ -59,7 +65,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
     });
     
     return {
-      day: `Day ${day}`,
+      day: `${language === 'en' ? 'Day' : 'Dia'} ${day}`,
       present: presentCount,
       absent: absentCount,
       total: presentCount + absentCount,
@@ -69,8 +75,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
 
   // Pie chart data for overall distribution
   const pieData = [
-    { name: 'Present', value: totalPresent, color: '#10B981' },
-    { name: 'Absent', value: totalAbsent, color: '#EF4444' }
+    { name: t('present'), value: totalPresent, color: '#10B981' },
+    { name: t('absent'), value: totalAbsent, color: '#EF4444' }
   ];
 
   // Top performers
@@ -81,9 +87,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className={`p-3 rounded-lg shadow-lg border ${
-          isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`p-3 rounded-lg shadow-lg border ${themeClasses.card} ${themeClasses.border}`}>
           <p className="font-medium">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} style={{ color: entry.color }}>
@@ -98,16 +102,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
 
   if (users.length === 0 || selectedDays.length === 0) {
     return (
-      <div className={`rounded-xl shadow-lg border transition-all duration-300 ${
-        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      }`}>
+      <div className={`rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
         <div className="p-12 text-center">
-          <TrendingUp className={`w-16 h-16 mx-auto mb-4 opacity-50 ${
-            isDarkMode ? 'text-gray-400' : 'text-gray-500'
-          }`} />
-          <h3 className="text-xl font-semibold mb-2">No Analytics Available</h3>
-          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Add users and track their presence to see analytics
+          <TrendingUp className={`w-16 h-16 mx-auto mb-4 opacity-50 ${themeClasses.muted}`} />
+          <h3 className="text-xl font-semibold mb-2">{t('noAnalyticsAvailable')}</h3>
+          <p className={themeClasses.muted}>
+            {t('addUsersToSeeAnalytics')}
           </p>
         </div>
       </div>
@@ -118,13 +118,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
     <div className="space-y-6">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Total Users
+              <p className={`text-sm font-medium ${themeClasses.muted}`}>
+                {t('totalUsers')}
               </p>
               <p className="text-3xl font-bold text-blue-600">{totalUsers}</p>
             </div>
@@ -132,13 +130,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
           </div>
         </div>
 
-        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Overall Attendance
+              <p className={`text-sm font-medium ${themeClasses.muted}`}>
+                {t('overallAttendance')}
               </p>
               <p className="text-3xl font-bold text-green-600">{overallRate}%</p>
             </div>
@@ -146,13 +142,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
           </div>
         </div>
 
-        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Days Tracked
+              <p className={`text-sm font-medium ${themeClasses.muted}`}>
+                {t('daysTracked')}
               </p>
               <p className="text-3xl font-bold text-purple-600">{selectedDays.length}</p>
             </div>
@@ -160,13 +154,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
           </div>
         </div>
 
-        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Total Records
+              <p className={`text-sm font-medium ${themeClasses.muted}`}>
+                {t('totalRecords')}
               </p>
               <p className="text-3xl font-bold text-orange-600">{totalPresent + totalAbsent}</p>
             </div>
@@ -178,32 +170,28 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* User Attendance Bar Chart */}
-        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
-          <h3 className="text-lg font-semibold mb-4">User Attendance Comparison</h3>
+        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
+          <h3 className="text-lg font-semibold mb-4">{t('userAttendanceComparison')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={userAttendanceData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'light' ? '#E5E7EB' : '#374151'} />
               <XAxis 
                 dataKey="name" 
-                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                stroke={theme === 'light' ? '#6B7280' : '#9CA3AF'}
                 fontSize={12}
               />
-              <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <YAxis stroke={theme === 'light' ? '#6B7280' : '#9CA3AF'} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar dataKey="present" fill="#10B981" name="Present" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="absent" fill="#EF4444" name="Absent" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="present" fill="#10B981" name={t('present')} radius={[2, 2, 0, 0]} />
+              <Bar dataKey="absent" fill="#EF4444" name={t('absent')} radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Overall Distribution Pie Chart */}
-        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
-          <h3 className="text-lg font-semibold mb-4">Overall Distribution</h3>
+        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
+          <h3 className="text-lg font-semibold mb-4">{t('overallDistribution')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -229,26 +217,24 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
       {/* Daily Trends and Top Performers */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Daily Attendance Trends */}
-        <div className={`lg:col-span-2 p-6 rounded-xl shadow-lg border transition-all duration-300 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
-          <h3 className="text-lg font-semibold mb-4">Daily Attendance Trends</h3>
+        <div className={`lg:col-span-2 p-6 rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
+          <h3 className="text-lg font-semibold mb-4">{t('dailyAttendanceTrends')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={dailyTrends}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'light' ? '#E5E7EB' : '#374151'} />
               <XAxis 
                 dataKey="day" 
-                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                stroke={theme === 'light' ? '#6B7280' : '#9CA3AF'}
                 fontSize={12}
               />
-              <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <YAxis stroke={theme === 'light' ? '#6B7280' : '#9CA3AF'} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Line 
                 type="monotone" 
                 dataKey="present" 
                 stroke="#10B981" 
-                name="Present"
+                name={t('present')}
                 strokeWidth={3}
                 dot={{ fill: '#10B981', r: 4 }}
               />
@@ -256,7 +242,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
                 type="monotone" 
                 dataKey="absent" 
                 stroke="#EF4444" 
-                name="Absent"
+                name={t('absent')}
                 strokeWidth={3}
                 dot={{ fill: '#EF4444', r: 4 }}
               />
@@ -265,20 +251,16 @@ const Analytics: React.FC<AnalyticsProps> = ({ users, presenceData, selectedDays
         </div>
 
         {/* Top Performers */}
-        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        }`}>
+        <div className={`p-6 rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <Award className="w-5 h-5 mr-2 text-yellow-500" />
-            Top Performers
+            {t('topPerformers')}
           </h3>
           <div className="space-y-4">
             {topPerformers.map((user, index) => (
               <div
                 key={user.fullName}
-                className={`flex items-center justify-between p-3 rounded-lg ${
-                  isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-                }`}
+                className={`flex items-center justify-between p-3 rounded-lg ${themeClasses.card}`}
               >
                 <div className="flex items-center space-x-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white ${

@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { User, PresenceData } from '../types';
 
-export const exportToCSV = (users: User[], presenceData: PresenceData, selectedDays: number[]) => {
+export const exportToCSV = (users: User[], presenceData: PresenceData, selectedDays: number[], reportTitle?: string) => {
   const headers = ['Name', 'Total Present', 'Total Absent', ...selectedDays.map(day => `Day ${day}`)];
   
   const data = users.map(user => {
@@ -20,7 +20,12 @@ export const exportToCSV = (users: User[], presenceData: PresenceData, selectedD
     return row;
   });
 
-  const csv = Papa.unparse([headers, ...data]);
+  // Add title row if provided
+  const csvData = reportTitle 
+    ? [[reportTitle], [], headers, ...data]
+    : [headers, ...data];
+
+  const csv = Papa.unparse(csvData);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -32,7 +37,7 @@ export const exportToCSV = (users: User[], presenceData: PresenceData, selectedD
   document.body.removeChild(link);
 };
 
-export const exportToExcel = (users: User[], presenceData: PresenceData, selectedDays: number[]) => {
+export const exportToExcel = (users: User[], presenceData: PresenceData, selectedDays: number[], reportTitle?: string) => {
   const headers = ['Name', 'Total Present', 'Total Absent', ...selectedDays.map(day => `Day ${day}`)];
   
   const data = users.map(user => {
@@ -48,20 +53,53 @@ export const exportToExcel = (users: User[], presenceData: PresenceData, selecte
     return row;
   });
 
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+  // Create worksheet data
+  const wsData = [];
+  
+  if (reportTitle) {
+    wsData.push([reportTitle]);
+    wsData.push([]);
+  }
+  
+  wsData.push(headers);
+  wsData.push(...data);
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  
+  // Style the title if present
+  if (reportTitle) {
+    ws['A1'] = { v: reportTitle, t: 's', s: { font: { bold: true, sz: 16 } } };
+    // Merge cells for title
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+  }
+  
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Presence Report');
   XLSX.writeFile(wb, `presence-report-${new Date().toISOString().split('T')[0]}.xlsx`);
 };
 
-export const exportToPDF = (users: User[], presenceData: PresenceData, selectedDays: number[]) => {
+export const exportToPDF = (users: User[], presenceData: PresenceData, selectedDays: number[], reportTitle?: string) => {
   const doc = new jsPDF();
   
+  let yPosition = 22;
+  
+  // Add custom title if provided
+  if (reportTitle) {
+    doc.setFontSize(24);
+    doc.setFont(undefined, 'bold');
+    doc.text(reportTitle, 14, yPosition);
+    yPosition += 15;
+  }
+  
   doc.setFontSize(20);
-  doc.text('Presence/Absence Report', 14, 22);
+  doc.setFont(undefined, 'bold');
+  doc.text('Presence/Absence Report', 14, yPosition);
+  yPosition += 10;
   
   doc.setFontSize(12);
-  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 32);
+  doc.setFont(undefined, 'normal');
+  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, yPosition);
+  yPosition += 10;
 
   const headers = [['Name', 'Present', 'Absent', 'Attendance Rate']];
   
@@ -75,7 +113,7 @@ export const exportToPDF = (users: User[], presenceData: PresenceData, selectedD
   (doc as any).autoTable({
     head: headers,
     body: data,
-    startY: 40,
+    startY: yPosition,
     theme: 'grid',
     styles: { fontSize: 10 },
     headStyles: { fillColor: [59, 130, 246] }

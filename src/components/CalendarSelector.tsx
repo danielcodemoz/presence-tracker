@@ -1,6 +1,8 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import { getDaysInMonth, getMonthName, getDayOfWeek } from '../utils/dateUtils';
+import { getDaysInMonth, getDayOfWeek } from '../utils/dateUtils';
+import { useTranslation } from '../utils/translations';
+import { getThemeClasses } from '../utils/themes';
 
 interface CalendarSelectorProps {
   selectedDays: number[];
@@ -9,7 +11,8 @@ interface CalendarSelectorProps {
   currentYear: number;
   onMonthChange: (month: number) => void;
   onYearChange: (year: number) => void;
-  isDarkMode: boolean;
+  language: 'en' | 'pt';
+  theme: string;
 }
 
 const CalendarSelector: React.FC<CalendarSelectorProps> = ({
@@ -19,15 +22,24 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
   currentYear,
   onMonthChange,
   onYearChange,
-  isDarkMode
+  language,
+  theme
 }) => {
   const daysInMonth = getDaysInMonth(currentMonth, currentYear);
   const firstDayOfWeek = getDayOfWeek(1, currentMonth, currentYear);
   
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const t = useTranslation(language);
+  const themeClasses = getThemeClasses(theme);
+  
+  const weekDays = [
+    t('sunday').slice(0, 3), t('monday').slice(0, 3), t('tuesday').slice(0, 3), 
+    t('wednesday').slice(0, 3), t('thursday').slice(0, 3), t('friday').slice(0, 3), 
+    t('saturday').slice(0, 3)
+  ];
+  
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    t('january'), t('february'), t('march'), t('april'), t('may'), t('june'),
+    t('july'), t('august'), t('september'), t('october'), t('november'), t('december')
   ];
 
   const handleDayClick = (day: number) => {
@@ -91,20 +103,18 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className={`rounded-xl shadow-lg border transition-all duration-300 ${
-        isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      }`}>
+      <div className={`rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold flex items-center">
               <CalendarIcon className="w-6 h-6 mr-2 text-blue-500" />
-              Select Days to Track
+              {t('selectDaysToTrack')}
             </h2>
             <div className="flex items-center space-x-2">
               <span className={`text-sm px-3 py-1 rounded-full ${
-                isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
+                theme === 'light' ? 'bg-blue-100 text-blue-800' : 'bg-blue-900 text-blue-200'
               }`}>
-                {selectedDays.length} days selected
+                {selectedDays.length} {t('daysSelected')}
               </span>
             </div>
           </div>
@@ -113,11 +123,7 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => navigateMonth('prev')}
-              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                isDarkMode 
-                  ? 'hover:bg-gray-700 text-gray-300' 
-                  : 'hover:bg-gray-100 text-gray-600'
-              }`}
+              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${themeClasses.cardHover}`}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -126,11 +132,7 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
               <select
                 value={currentMonth}
                 onChange={(e) => onMonthChange(parseInt(e.target.value))}
-                className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
+                className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${themeClasses.input}`}
               >
                 {monthNames.map((month, index) => (
                   <option key={index} value={index}>{month}</option>
@@ -140,11 +142,7 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
               <select
                 value={currentYear}
                 onChange={(e) => onYearChange(parseInt(e.target.value))}
-                className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
+                className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${themeClasses.input}`}
               >
                 {Array.from({ length: 11 }, (_, i) => currentYear - 5 + i).map(year => (
                   <option key={year} value={year}>{year}</option>
@@ -154,11 +152,7 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
             
             <button
               onClick={() => navigateMonth('next')}
-              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                isDarkMode 
-                  ? 'hover:bg-gray-700 text-gray-300' 
-                  : 'hover:bg-gray-100 text-gray-600'
-              }`}
+              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${themeClasses.cardHover}`}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -170,23 +164,19 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
               onClick={handleSelectAll}
               className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm font-medium"
             >
-              Select All
+              {t('selectAll')}
             </button>
             <button
               onClick={handleSelectWeekdays}
               className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm font-medium"
             >
-              Weekdays Only
+              {t('weekdaysOnly')}
             </button>
             <button
               onClick={handleClearAll}
-              className={`px-4 py-2 rounded-lg border transition-all duration-200 hover:shadow-md text-sm font-medium ${
-                isDarkMode 
-                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`px-4 py-2 rounded-lg border transition-all duration-200 hover:shadow-md text-sm font-medium ${themeClasses.border} ${themeClasses.cardHover}`}
             >
-              Clear All
+              {t('clearAll')}
             </button>
           </div>
 
@@ -196,9 +186,7 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
             {weekDays.map(day => (
               <div
                 key={day}
-                className={`p-3 text-center text-sm font-semibold ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}
+                className={`p-3 text-center text-sm font-semibold ${themeClasses.muted}`}
               >
                 {day}
               </div>
@@ -213,11 +201,7 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
                     className={`w-full h-full rounded-lg transition-all duration-200 hover:scale-105 text-sm font-medium ${
                       selectedDays.includes(day)
                         ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                        : `${
-                            isDarkMode 
-                              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`
+                        : `${themeClasses.card} ${themeClasses.cardHover}`
                     }`}
                   >
                     {day}
@@ -231,10 +215,8 @@ const CalendarSelector: React.FC<CalendarSelectorProps> = ({
 
           {/* Selected Days Summary */}
           {selectedDays.length > 0 && (
-            <div className={`mt-6 p-4 rounded-lg border ${
-              isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
-            }`}>
-              <h4 className="font-medium mb-2">Selected Days:</h4>
+            <div className={`mt-6 p-4 rounded-lg border ${themeClasses.card} ${themeClasses.border}`}>
+              <h4 className="font-medium mb-2">{t('selectedDays')}:</h4>
               <div className="flex flex-wrap gap-1">
                 {selectedDays.map(day => (
                   <span
