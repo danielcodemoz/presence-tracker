@@ -14,6 +14,7 @@ import BulkExcuseManager from './components/BulkExcuseManager';
 import AuthModal from './components/AuthModal';
 import AccountManagement from './components/AccountManagement';
 import Settings from './components/Settings';
+import UserManagement from './components/UserManagement';
 import { 
   Users, 
   Calendar, 
@@ -27,7 +28,10 @@ import {
   FileSpreadsheet,
   LogOut,
   Shield,
-  User as UserIcon
+  User as UserIcon,
+  Globe,
+  Palette,
+  Heart
 } from 'lucide-react';
 
 function App() {
@@ -66,6 +70,8 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(!authState.isAuthenticated);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
 
   const t = useTranslation(settings.language);
   const themeClasses = getThemeClasses(settings.theme);
@@ -124,6 +130,10 @@ function App() {
     setUsers(prev => [...prev, ...newUsers]);
   }, [setUsers]);
 
+  const handleUsersChange = useCallback((updatedUsers: User[]) => {
+    setUsers(updatedUsers);
+  }, [setUsers]);
+
   const handlePresenceToggle = useCallback((userId: string, day: number) => {
     // Check if user has excuse for this day
     const dayOfWeek = getDayOfWeek(day, currentMonth, currentYear);
@@ -139,8 +149,9 @@ function App() {
       
       const currentStatus = newData[userId][day];
       const newStatus: CellStatus = 
-        currentStatus === null ? 'present' :
-        currentStatus === 'present' ? 'absent' : null;
+        currentStatus === null || currentStatus === undefined ? 'present' :
+        currentStatus === 'present' ? 'absent' : 
+        currentStatus === 'absent' ? null : 'present';
       
       newData[userId][day] = newStatus;
       return newData;
@@ -163,6 +174,16 @@ function App() {
     }));
   }, [excuses, currentMonth, currentYear, presenceData, setPresenceData, setUsers]);
 
+  const handleLanguageChange = (language: 'en' | 'pt') => {
+    setSettings({ ...settings, language });
+    setShowLanguageMenu(false);
+  };
+
+  const handleThemeChange = (theme: string) => {
+    setSettings({ ...settings, theme });
+    setShowThemeMenu(false);
+  };
+
   const handleExportCSV = () => exportToCSV(filteredUsers, presenceData, selectedDays, settings.reportTitle);
   const handleExportExcel = () => exportToExcel(filteredUsers, presenceData, selectedDays, settings.reportTitle);
   const handleExportPDF = () => exportToPDF(filteredUsers, presenceData, selectedDays, settings.reportTitle);
@@ -175,6 +196,14 @@ function App() {
     { id: 'excuses', label: t('excuses'), icon: Shield },
     ...(authState.currentUser?.role === 'admin' ? [{ id: 'accounts', label: t('accountManagement'), icon: UserIcon }] : []),
     { id: 'settings', label: t('settings'), icon: SettingsIcon }
+  ];
+
+  const themes = [
+    { value: 'light', label: t('light'), gradient: 'from-blue-50 to-indigo-100' },
+    { value: 'dark', label: t('dark'), gradient: 'from-gray-800 to-gray-900' },
+    { value: 'blue', label: t('blue'), gradient: 'from-blue-900 to-blue-800' },
+    { value: 'green', label: t('green'), gradient: 'from-emerald-900 to-green-800' },
+    { value: 'purple', label: t('purple'), gradient: 'from-purple-900 to-violet-800' }
   ];
 
   if (!authState.isAuthenticated) {
@@ -235,6 +264,70 @@ function App() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={`pl-10 pr-4 py-2 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${themeClasses.input}`}
                 />
+              </div>
+
+              {/* Language Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${themeClasses.card} ${themeClasses.cardHover} shadow-sm`}
+                  title={t('language')}
+                >
+                  <Globe className="w-5 h-5" />
+                </button>
+                
+                {showLanguageMenu && (
+                  <div className={`absolute right-0 mt-2 w-32 rounded-lg shadow-lg border z-10 ${themeClasses.card} ${themeClasses.border}`}>
+                    <div className="py-1">
+                      <button
+                        onClick={() => handleLanguageChange('en')}
+                        className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
+                          settings.language === 'en' ? 'bg-blue-500 text-white' : themeClasses.cardHover
+                        }`}
+                      >
+                        🇺🇸 English
+                      </button>
+                      <button
+                        onClick={() => handleLanguageChange('pt')}
+                        className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
+                          settings.language === 'pt' ? 'bg-blue-500 text-white' : themeClasses.cardHover
+                        }`}
+                      >
+                        🇧🇷 Português
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Theme Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowThemeMenu(!showThemeMenu)}
+                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${themeClasses.card} ${themeClasses.cardHover} shadow-sm`}
+                  title={t('theme')}
+                >
+                  <Palette className="w-5 h-5" />
+                </button>
+                
+                {showThemeMenu && (
+                  <div className={`absolute right-0 mt-2 w-40 rounded-lg shadow-lg border z-10 ${themeClasses.card} ${themeClasses.border}`}>
+                    <div className="py-1">
+                      {themes.map(theme => (
+                        <button
+                          key={theme.value}
+                          onClick={() => handleThemeChange(theme.value)}
+                          className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
+                            settings.theme === theme.value ? 'bg-blue-500 text-white' : themeClasses.cardHover
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded mr-2 bg-gradient-to-r ${theme.gradient}`}></div>
+                          {theme.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Export Menu */}
@@ -333,30 +426,13 @@ function App() {
               </div>
             </div>
 
-            {/* Users List */}
-            {filteredUsers.length > 0 && (
-              <div className={`rounded-xl shadow-lg border transition-all duration-300 ${themeClasses.card}`}>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">
-                    {t('registeredUsers')} ({filteredUsers.length})
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredUsers.map((user) => (
-                      <div
-                        key={user.id}
-                        className={`p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${themeClasses.card} ${themeClasses.border} ${themeClasses.cardHover}`}
-                      >
-                        <div className="font-medium mb-2">{user.name}</div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-green-500">{t('present')}: {user.totalPresent}</span>
-                          <span className="text-red-500">{t('absent')}: {user.totalAbsent}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* User Management Component */}
+            <UserManagement
+              users={users}
+              onUsersChange={handleUsersChange}
+              language={settings.language}
+              theme={settings.theme}
+            />
           </div>
         )}
 
@@ -435,6 +511,21 @@ function App() {
           />
         )}
       </main>
+
+      {/* Footer */}
+      <footer className={`border-t mt-16 ${themeClasses.border}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center">
+            <p className={`text-sm flex items-center justify-center space-x-1 ${themeClasses.muted}`}>
+              <span>{settings.language === 'en' ? 'Developed with' : 'Desenvolvido com'}</span>
+              <Heart className="w-4 h-4 text-red-500 fill-current" />
+              <span>{settings.language === 'en' ? 'by' : 'por'}</span>
+              <span className="font-semibold text-blue-600">Daniel258</span>
+              <span>🇲🇿</span>
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppSettings } from '../types';
-import { Settings as SettingsIcon, Globe, Palette, FileText } from 'lucide-react';
+import { Settings as SettingsIcon, FileText } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
 import { getThemeClasses } from '../utils/themes';
 
@@ -18,19 +18,6 @@ const Settings: React.FC<SettingsProps> = ({ settings, onSettingsChange, languag
   const handleChange = (key: keyof AppSettings, value: any) => {
     onSettingsChange({ ...settings, [key]: value });
   };
-
-  const themes = [
-    { value: 'light', label: t('light') },
-    { value: 'dark', label: t('dark') },
-    { value: 'blue', label: t('blue') },
-    { value: 'green', label: t('green') },
-    { value: 'purple', label: t('purple') }
-  ];
-
-  const languages = [
-    { value: 'en', label: t('english') },
-    { value: 'pt', label: t('portuguese') }
-  ];
 
   return (
     <div className="space-y-6">
@@ -56,57 +43,21 @@ const Settings: React.FC<SettingsProps> = ({ settings, onSettingsChange, languag
                 className={`w-full px-4 py-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${themeClasses.input}`}
               />
               <p className={`text-sm mt-1 ${themeClasses.muted}`}>
-                This title will appear on PDF reports
+                {language === 'en' ? 'This title will appear on PDF reports' : 'Este título aparecerá nos relatórios PDF'}
               </p>
             </div>
 
-            {/* Language */}
-            <div>
-              <label className={`block text-sm font-medium mb-2 flex items-center ${themeClasses.muted}`}>
-                <Globe className="w-4 h-4 mr-2" />
-                {t('language')}
-              </label>
-              <select
-                value={settings.language}
-                onChange={(e) => handleChange('language', e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent ${themeClasses.input}`}
-              >
-                {languages.map(lang => (
-                  <option key={lang.value} value={lang.value}>
-                    {lang.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Theme */}
-            <div>
-              <label className={`block text-sm font-medium mb-2 flex items-center ${themeClasses.muted}`}>
-                <Palette className="w-4 h-4 mr-2" />
-                {t('theme')}
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {themes.map(themeOption => (
-                  <button
-                    key={themeOption.value}
-                    onClick={() => handleChange('theme', themeOption.value)}
-                    className={`p-4 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
-                      settings.theme === themeOption.value
-                        ? 'border-blue-500 bg-blue-50'
-                        : `border-gray-300 ${themeClasses.cardHover}`
-                    }`}
-                  >
-                    <div className={`w-full h-8 rounded mb-2 ${
-                      themeOption.value === 'light' ? 'bg-gradient-to-r from-blue-50 to-indigo-100' :
-                      themeOption.value === 'dark' ? 'bg-gray-900' :
-                      themeOption.value === 'blue' ? 'bg-gradient-to-r from-blue-900 to-blue-800' :
-                      themeOption.value === 'green' ? 'bg-gradient-to-r from-emerald-900 to-green-800' :
-                      'bg-gradient-to-r from-purple-900 to-violet-800'
-                    }`}></div>
-                    <div className="text-sm font-medium">{themeOption.label}</div>
-                  </button>
-                ))}
-              </div>
+            {/* Info about navbar controls */}
+            <div className={`p-4 rounded-lg border-l-4 border-blue-500 ${
+              theme === 'light' ? 'bg-blue-50' : 'bg-blue-900/20'
+            }`}>
+              <h4 className={`font-medium mb-2 ${theme === 'light' ? 'text-blue-800' : 'text-blue-300'}`}>
+                💡 {language === 'en' ? 'Quick Access:' : 'Acesso Rápido:'}
+              </h4>
+              <ul className={`text-sm space-y-1 ${theme === 'light' ? 'text-blue-700' : 'text-blue-200'}`}>
+                <li>• {language === 'en' ? 'Language and theme settings are now available in the top navigation bar' : 'Configurações de idioma e tema estão agora disponíveis na barra de navegação superior'}</li>
+                <li>• {language === 'en' ? 'Look for the globe (🌐) and palette (🎨) icons in the header' : 'Procure pelos ícones de globo (🌐) e paleta (🎨) no cabeçalho'}</li>
+              </ul>
             </div>
           </div>
 

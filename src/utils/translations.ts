@@ -40,7 +40,6 @@ export const translations = {
     uploadFile: 'Upload File',
     enterNames: 'Enter names (one per line, or separated by commas)',
     addUser: 'Add User',
-    addUsers: 'Add Users',
     clear: 'Clear',
     preview: 'Preview',
     namesWillAppear: 'Names will appear here as you type',
@@ -152,7 +151,10 @@ export const translations = {
     excusesBlockTracking: 'Excuses automatically block attendance tracking for specific days',
     usersWithExcuses: 'Users with excuses for a day cannot be marked present or absent',
     daysExcluded: 'These days are excluded from attendance calculations',
-    perfectForRegular: 'Perfect for managing regular absences like medical appointments'
+    perfectForRegular: 'Perfect for managing regular absences like medical appointments',
+    
+    // Search
+    search: 'Search'
   },
   
   pt: {
@@ -307,7 +309,10 @@ export const translations = {
     excusesBlockTracking: 'Justificativas bloqueiam automaticamente o rastreamento de presença para dias específicos',
     usersWithExcuses: 'Usuários com justificativas para um dia não podem ser marcados como presente ou ausente',
     daysExcluded: 'Esses dias são excluídos dos cálculos de frequência',
-    perfectForRegular: 'Perfeito para gerenciar ausências regulares como consultas médicas'
+    perfectForRegular: 'Perfeito para gerenciar ausências regulares como consultas médicas',
+    
+    // Search
+    search: 'Buscar'
   }
 };
 
