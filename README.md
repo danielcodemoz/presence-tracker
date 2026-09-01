@@ -1,5 +1,10 @@
 # Presence Tracker
 
-App web de controlo de presencas. Vite, React, TypeScript.
+**Ao vivo:** [https://danielcodemoz.github.io/presence-tracker/](https://danielcodemoz.github.io/presence-tracker/)  
+Portfólio: [danielpro.dev](https://danielpro.dev)
 
-Prototipo. Autor: Daniel Marcos
+App web de controlo de presenças. Vite, React, TypeScript.
+
+Demo estática em `docs/` (adicionar nomes, marcar presente/ausente, localStorage).
+
+Protótipo. Autor: Daniel Marcos
