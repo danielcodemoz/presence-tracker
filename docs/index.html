@@ -3,46 +3,127 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+    (function () {
+      try {
+        var s = localStorage.getItem("dm-labs-theme");
+        var t = (s === "light" || s === "dark") ? s :
+          (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  </script>
   <title>Presence Tracker · Labs</title>
-  <meta name="description" content="Demo estática de assiduidade — Daniel Marcos Labs." />
+  <meta name="description" content="Assiduidade por turmas, sessões e CSV — Daniel Marcos Labs." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root { --bg:#0b1014; --panel:#121a21; --line:#243140; --text:#e8eef4; --muted:#8ea0b3; --cyan:#6ec8d4; --green:#3cb371; --red:#e23b3b; }
+    :root {
+      --bg: #0b1014;
+      --panel: #121a21;
+      --line: rgba(232, 238, 247, 0.08);
+      --text: #e8eef4;
+      --muted: #8ea0b3;
+      --cyan: #6ec8d4;
+      --gold: #D4AF37;
+      --accent: #D4AF37;
+      --accent-dim: rgba(212, 175, 55, 0.16);
+      --green: #3cb371;
+      --red: #e26d7a;
+      --amber: #d9a441;
+      --input: #0b1014;
+      --header: #0e151b;
+      --on-accent: #0B1220;
+    }
+    html { color-scheme: dark; }
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #F6F3EC;
+      --panel: #FFFFFF;
+      --line: rgba(0, 0, 0, 0.08);
+      --text: #1A2233;
+      --muted: #5C6B80;
+      --cyan: #0e7a86;
+      --input: #FFFFFF;
+      --header: #FFFFFF;
+    }
     * { box-sizing: border-box; }
-    html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", system-ui, sans-serif; min-height: 100vh; }
+    body { display: flex; flex-direction: column; }
     a { color: var(--cyan); text-decoration: none; }
     a:hover { text-decoration: underline; }
     header, footer {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-      gap: 12px; padding: 14px 22px; background: #0e151b; border-bottom: 1px solid var(--line);
+      gap: 12px; padding: 14px 22px; background: var(--header); border-bottom: 1px solid var(--line);
     }
-    footer { border-bottom: 0; border-top: 1px solid var(--line); margin-top: 28px; color: var(--muted); font-size: 13px; }
+    footer { border-bottom: 0; border-top: 1px solid var(--line); margin-top: auto; color: var(--muted); font-size: 13px; }
     .brand { font-weight: 700; }
     .brand span { color: var(--cyan); }
-    .nav { display: flex; gap: 16px; font-size: 14px; }
-    .wrap { max-width: 760px; margin: 0 auto; padding: 22px; }
-    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
-    h1 { margin: 0 0 8px; font-size: 26px; }
+    .nav { display: flex; gap: 16px; font-size: 14px; align-items: center; }
+    .theme-toggle {
+      background: transparent; color: var(--text); border: 1px solid var(--line);
+      border-radius: 999px; width: 2.4rem; height: 2.4rem; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .theme-toggle:hover { border-color: var(--gold); color: var(--gold); }
+    .wrap { max-width: 1180px; width: 100%; margin: 0 auto; padding: 22px; flex: 1; }
+    h1 { margin: 0 0 6px; font-size: 26px; }
     .sub { color: var(--muted); margin: 0 0 18px; }
-    form { display: flex; gap: 8px; margin-bottom: 16px; }
-    input, button { font: inherit; }
-    input { flex: 1; background: #0b1014; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
-    button { background: var(--cyan); color: #082026; border: 0; border-radius: 8px; padding: 10px 14px; font-weight: 600; cursor: pointer; }
+    .layout { display: grid; grid-template-columns: 260px 1fr; gap: 16px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+    h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .turmas { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .turma {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent;
+      color: var(--text); cursor: pointer; font: inherit; text-align: left; width: 100%;
+    }
+    .turma[aria-current="true"] { border-color: var(--cyan); background: rgba(110, 200, 212, 0.12); }
+    .turma .n { font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+    input, select, button, textarea { font: inherit; }
+    input[type="text"], input[type="date"], input[type="search"], select, textarea {
+      width: 100%; background: var(--input); color: var(--text); border: 1px solid var(--line);
+      border-radius: 8px; padding: 9px 11px; outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--accent-dim); }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    button {
+      border: 0; border-radius: 8px; padding: 9px 12px; font-weight: 600; cursor: pointer;
+      background: var(--cyan); color: var(--on-accent);
+    }
     button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
-    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-    .kpi { background: #18222b; padding: 12px; border-radius: 8px; }
+    button.ghost:hover { border-color: var(--gold); color: var(--gold); }
+    button.danger { background: transparent; color: var(--red); border: 1px solid var(--line); }
+    button.gold { background: var(--gold); color: var(--on-accent); }
+    .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+    .kpi { background: var(--bg); border: 1px solid var(--line); padding: 12px; border-radius: 8px; }
     .kpi b { display: block; font-size: 22px; }
-    .kpi span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
-    ul { list-style: none; margin: 0; padding: 0; }
-    li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .kpi span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 12px; }
+    .toolbar .grow { flex: 1; min-width: 160px; }
+    ul.students { list-style: none; margin: 0; padding: 0; }
+    li.student {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid var(--line);
+    }
     .name { font-weight: 600; }
-    .actions { display: flex; gap: 6px; }
-    .present { color: var(--green); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
-    .absent { color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
-    .empty { color: var(--muted); }
-    @media (max-width: 640px) { .kpis { grid-template-columns: 1fr; } form { flex-direction: column; } }
+    .marks { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .marks button { padding: 6px 10px; font-size: 12px; }
+    .marks button[aria-pressed="true"].p { background: var(--green); color: #082016; }
+    .marks button[aria-pressed="true"].l { background: var(--amber); color: #1a1404; }
+    .marks button[aria-pressed="true"].a { background: var(--red); color: #2a0a10; }
+    .empty { color: var(--muted); padding: 1rem 0; }
+    .edit-name { display: flex; gap: 6px; }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    @media (max-width: 860px) {
+      .layout, .kpis { grid-template-columns: 1fr; }
+      li.student { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -51,23 +132,61 @@
     <nav class="nav">
       <a href="https://danielpro.dev">Daniel Marcos · Labs</a>
       <a href="https://github.com/danielcodemoz/presence-tracker">GitHub</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Modo claro"></button>
     </nav>
   </header>
   <main class="wrap">
-    <div class="panel">
-      <h1>Assiduidade (demo)</h1>
-      <p class="sub">Adicione nomes, marque presente ou ausente. Os dados ficam só neste browser (localStorage) — nada é enviado a um servidor.</p>
-      <div class="kpis">
-        <div class="kpi"><span>Lista</span><b id="nTotal">0</b></div>
-        <div class="kpi"><span>Presentes</span><b id="nPresent">0</b></div>
-        <div class="kpi"><span>Ausentes</span><b id="nAbsent">0</b></div>
-      </div>
-      <form id="addForm">
-        <input id="nameInput" maxlength="80" placeholder="Nome do aluno / participante" autocomplete="off" required />
-        <button type="submit">Adicionar</button>
-        <button type="button" class="ghost" id="clearBtn">Limpar lista</button>
-      </form>
-      <ul id="list"><li class="empty">Ainda não há nomes. Adicione o primeiro.</li></ul>
+    <h1>Assiduidade por turma</h1>
+    <p class="sub">Várias turmas, alunos e sessões por data. Presente, atraso ou ausente — tudo fica neste browser (localStorage). Nada é enviado a um servidor.</p>
+    <div class="layout">
+      <aside class="panel">
+        <h2>Turmas</h2>
+        <div class="turmas" id="turmaList"></div>
+        <form id="addClassForm">
+          <label for="className">Nova turma</label>
+          <div class="row">
+            <input id="className" maxlength="80" placeholder="ex. 8.ª A" autocomplete="off" required />
+            <button type="submit" class="gold">Criar</button>
+          </div>
+        </form>
+      </aside>
+      <section class="panel" id="classPanel">
+        <p class="empty" id="noClass">Cria uma turma à esquerda para começar.</p>
+        <div id="classBody" hidden>
+          <div class="head-actions">
+            <strong id="classTitle" style="font-size:18px;margin-right:auto;"></strong>
+            <button type="button" class="ghost" id="renameClass">Renomear</button>
+            <button type="button" class="danger" id="deleteClass">Apagar turma</button>
+          </div>
+          <div class="kpis">
+            <div class="kpi"><span>Alunos</span><b id="kTotal">0</b></div>
+            <div class="kpi"><span>Presentes</span><b id="kPresent">0</b></div>
+            <div class="kpi"><span>Atrasos</span><b id="kLate">0</b></div>
+            <div class="kpi"><span>Ausentes</span><b id="kAbsent">0</b></div>
+            <div class="kpi"><span>Assiduidade</span><b id="kPct">0%</b></div>
+          </div>
+          <div class="toolbar">
+            <div>
+              <label for="sessionDate">Sessão</label>
+              <input type="date" id="sessionDate" />
+            </div>
+            <div class="grow">
+              <label for="filter">Filtrar alunos</label>
+              <input type="search" id="filter" placeholder="Nome…" autocomplete="off" />
+            </div>
+            <button type="button" class="ghost" id="exportSession">CSV da sessão</button>
+            <button type="button" class="ghost" id="exportHistory">CSV do histórico</button>
+          </div>
+          <form id="addStudentForm" class="toolbar">
+            <div class="grow">
+              <label for="studentName">Novo aluno</label>
+              <input id="studentName" maxlength="80" placeholder="Nome completo" autocomplete="off" required />
+            </div>
+            <button type="submit">Adicionar</button>
+          </form>
+          <ul class="students" id="studentList"></ul>
+        </div>
+      </section>
     </div>
   </main>
   <footer>
@@ -75,63 +194,294 @@
     <div><a href="https://github.com/danielcodemoz/presence-tracker">github.com/danielcodemoz/presence-tracker</a></div>
   </footer>
   <script>
-    const KEY = "presence-tracker-labs-v1";
-    const listEl = document.getElementById("list");
-    const form = document.getElementById("addForm");
-    const input = document.getElementById("nameInput");
-    let people = [];
-    try { people = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { people = []; }
-    if (!Array.isArray(people)) people = [];
-
-    function save() { localStorage.setItem(KEY, JSON.stringify(people)); render(); }
-    function render() {
-      const present = people.filter(p => p.status === "present").length;
-      const absent = people.filter(p => p.status === "absent").length;
-      document.getElementById("nTotal").textContent = people.length;
-      document.getElementById("nPresent").textContent = present;
-      document.getElementById("nAbsent").textContent = absent;
-      if (!people.length) {
-        listEl.innerHTML = '<li class="empty">Ainda não há nomes. Adicione o primeiro.</li>';
-        return;
+    (function () {
+      var KEY = "presence-tracker-labs-v2";
+      var THEME_KEY = "dm-labs-theme";
+      function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+      function todayISO() {
+        var d = new Date();
+        var z = function (n) { return String(n).padStart(2, "0"); };
+        return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
       }
-      listEl.innerHTML = people.map((p, i) => `
-        <li>
-          <div>
-            <div class="name">${escapeHtml(p.name)}</div>
-            <div class="${p.status === "present" ? "present" : "absent"}">${p.status === "present" ? "PRESENTE" : "AUSENTE"}</div>
-          </div>
-          <div class="actions">
-            <button type="button" data-i="${i}" data-s="present">Presente</button>
-            <button type="button" class="ghost" data-i="${i}" data-s="absent">Ausente</button>
-            <button type="button" class="ghost" data-i="${i}" data-s="remove">Remover</button>
-          </div>
-        </li>`).join("");
-    }
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const name = input.value.trim();
-      if (!name) return;
-      people.push({ name, status: "absent" });
-      input.value = "";
-      save();
-    });
-    listEl.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-i]");
-      if (!btn) return;
-      const i = Number(btn.dataset.i);
-      const s = btn.dataset.s;
-      if (s === "remove") people.splice(i, 1);
-      else people[i].status = s;
-      save();
-    });
-    document.getElementById("clearBtn").addEventListener("click", () => {
-      if (!people.length) return;
-      if (confirm("Limpar toda a lista deste browser?")) { people = []; save(); }
-    });
-    render();
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function seed() {
+        var a = uid(), b = uid(), c = uid(), d = uid();
+        var cid = uid();
+        var date = todayISO();
+        var sessions = {};
+        sessions[cid + "|" + date] = {};
+        sessions[cid + "|" + date][a] = "present";
+        sessions[cid + "|" + date][b] = "late";
+        sessions[cid + "|" + date][c] = "present";
+        sessions[cid + "|" + date][d] = "absent";
+        return {
+          classes: [{
+            id: cid,
+            name: "8.ª A · Willow",
+            students: [
+              { id: a, name: "Ana Mucavele" },
+              { id: b, name: "Bruno Sitoe" },
+              { id: c, name: "Carla Nhampossa" },
+              { id: d, name: "Daniel Cossa" }
+            ]
+          }],
+          currentClassId: cid,
+          currentDate: date,
+          sessions: sessions
+        };
+      }
+      function load() {
+        try {
+          var raw = localStorage.getItem(KEY);
+          if (!raw) return seed();
+          var data = JSON.parse(raw);
+          if (!data || !Array.isArray(data.classes)) return seed();
+          if (!data.sessions) data.sessions = {};
+          if (!data.currentDate) data.currentDate = todayISO();
+          return data;
+        } catch (e) { return seed(); }
+      }
+      var state = load();
+      function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+      function currentClass() {
+        return state.classes.find(function (c) { return c.id === state.currentClassId; }) || null;
+      }
+      function sessionKey(cid, date) { return cid + "|" + date; }
+      function marksOf(cls) {
+        return state.sessions[sessionKey(cls.id, state.currentDate)] || {};
+      }
+      function setMark(cls, sid, status) {
+        var k = sessionKey(cls.id, state.currentDate);
+        if (!state.sessions[k]) state.sessions[k] = {};
+        state.sessions[k][sid] = status;
+      }
+      function statusOf(cls, sid) {
+        return marksOf(cls)[sid] || "";
+      }
+
+      function renderTurmas() {
+        var el = document.getElementById("turmaList");
+        el.innerHTML = "";
+        if (!state.classes.length) {
+          el.innerHTML = '<p class="empty">Ainda não há turmas.</p>';
+          return;
+        }
+        state.classes.forEach(function (c) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "turma";
+          btn.setAttribute("aria-current", c.id === state.currentClassId ? "true" : "false");
+          btn.innerHTML = "<span>" + escapeHtml(c.name) + "</span><span class=\"n\">" + c.students.length + "</span>";
+          btn.addEventListener("click", function () {
+            state.currentClassId = c.id;
+            save();
+            render();
+          });
+          el.appendChild(btn);
+        });
+      }
+
+      function renderStudents() {
+        var cls = currentClass();
+        var list = document.getElementById("studentList");
+        var q = document.getElementById("filter").value.trim().toLowerCase();
+        var shown = cls.students.filter(function (s) {
+          return !q || s.name.toLowerCase().indexOf(q) >= 0;
+        });
+        list.innerHTML = "";
+        if (!shown.length) {
+          list.innerHTML = '<li class="empty">Nenhum aluno neste filtro.</li>';
+          return;
+        }
+        shown.forEach(function (s) {
+          var st = statusOf(cls, s.id);
+          var li = document.createElement("li");
+          li.className = "student";
+          li.innerHTML =
+            '<div class="name-wrap"><div class="name">' + escapeHtml(s.name) + '</div></div>' +
+            '<div class="marks">' +
+              '<button type="button" class="ghost p" data-act="present" aria-pressed="' + (st === "present") + '">Presente</button>' +
+              '<button type="button" class="ghost l" data-act="late" aria-pressed="' + (st === "late") + '">Atraso</button>' +
+              '<button type="button" class="ghost a" data-act="absent" aria-pressed="' + (st === "absent") + '">Ausente</button>' +
+              '<button type="button" class="ghost" data-act="edit">Editar</button>' +
+              '<button type="button" class="danger" data-act="remove">Remover</button>' +
+            "</div>";
+          li.querySelector(".marks").addEventListener("click", function (e) {
+            var b = e.target.closest("button[data-act]");
+            if (!b) return;
+            var act = b.getAttribute("data-act");
+            if (act === "remove") {
+              if (!confirm("Remover " + s.name + " desta turma?")) return;
+              cls.students = cls.students.filter(function (x) { return x.id !== s.id; });
+              Object.keys(state.sessions).forEach(function (k) {
+                if (k.indexOf(cls.id + "|") === 0) delete state.sessions[k][s.id];
+              });
+              save(); render();
+              return;
+            }
+            if (act === "edit") {
+              var nw = prompt("Nome do aluno", s.name);
+              if (nw == null) return;
+              nw = nw.trim();
+              if (!nw) return;
+              s.name = nw;
+              save(); render();
+              return;
+            }
+            setMark(cls, s.id, act);
+            save(); render();
+          });
+          list.appendChild(li);
+        });
+      }
+
+      function renderKpis() {
+        var cls = currentClass();
+        var marks = marksOf(cls);
+        var total = cls.students.length;
+        var present = 0, late = 0, absent = 0;
+        cls.students.forEach(function (s) {
+          var st = marks[s.id] || "absent";
+          if (st === "present") present++;
+          else if (st === "late") late++;
+          else absent++;
+        });
+        var pct = total ? Math.round(((present + late) / total) * 100) : 0;
+        document.getElementById("kTotal").textContent = total;
+        document.getElementById("kPresent").textContent = present;
+        document.getElementById("kLate").textContent = late;
+        document.getElementById("kAbsent").textContent = absent;
+        document.getElementById("kPct").textContent = pct + "%";
+      }
+
+      function render() {
+        renderTurmas();
+        var cls = currentClass();
+        document.getElementById("sessionDate").value = state.currentDate;
+        if (!cls) {
+          document.getElementById("noClass").hidden = false;
+          document.getElementById("classBody").hidden = true;
+          return;
+        }
+        document.getElementById("noClass").hidden = true;
+        document.getElementById("classBody").hidden = false;
+        document.getElementById("classTitle").textContent = cls.name;
+        renderKpis();
+        renderStudents();
+      }
+
+      document.getElementById("addClassForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var name = document.getElementById("className").value.trim();
+        if (!name) return;
+        var c = { id: uid(), name: name, students: [] };
+        state.classes.push(c);
+        state.currentClassId = c.id;
+        document.getElementById("className").value = "";
+        save(); render();
+      });
+      document.getElementById("renameClass").addEventListener("click", function () {
+        var cls = currentClass();
+        if (!cls) return;
+        var nw = prompt("Nome da turma", cls.name);
+        if (nw == null) return;
+        nw = nw.trim();
+        if (!nw) return;
+        cls.name = nw;
+        save(); render();
+      });
+      document.getElementById("deleteClass").addEventListener("click", function () {
+        var cls = currentClass();
+        if (!cls) return;
+        if (!confirm("Apagar a turma «" + cls.name + "» e o respectivo histórico?")) return;
+        state.classes = state.classes.filter(function (c) { return c.id !== cls.id; });
+        Object.keys(state.sessions).forEach(function (k) {
+          if (k.indexOf(cls.id + "|") === 0) delete state.sessions[k];
+        });
+        state.currentClassId = state.classes[0] ? state.classes[0].id : "";
+        save(); render();
+      });
+      document.getElementById("addStudentForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var cls = currentClass();
+        if (!cls) return;
+        var name = document.getElementById("studentName").value.trim();
+        if (!name) return;
+        cls.students.push({ id: uid(), name: name });
+        document.getElementById("studentName").value = "";
+        save(); render();
+      });
+      document.getElementById("sessionDate").addEventListener("change", function () {
+        state.currentDate = this.value || todayISO();
+        save(); render();
+      });
+      document.getElementById("filter").addEventListener("input", function () { renderStudents(); });
+
+      function csvEscape(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }
+      function downloadCsv(name, rows) {
+        var bom = "\uFEFF";
+        var text = bom + rows.map(function (r) { return r.map(csvEscape).join(";"); }).join("\n");
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+        a.download = name;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+      function labelStatus(st) {
+        if (st === "present") return "Presente";
+        if (st === "late") return "Atraso";
+        if (st === "absent") return "Ausente";
+        return "Não marcado";
+      }
+      document.getElementById("exportSession").addEventListener("click", function () {
+        var cls = currentClass();
+        if (!cls) return;
+        var rows = [["Turma", "Data", "Aluno", "Estado"]];
+        cls.students.forEach(function (s) {
+          rows.push([cls.name, state.currentDate, s.name, labelStatus(statusOf(cls, s.id) || "absent")]);
+        });
+        downloadCsv("sessao-" + state.currentDate + ".csv", rows);
+      });
+      document.getElementById("exportHistory").addEventListener("click", function () {
+        var cls = currentClass();
+        if (!cls) return;
+        var rows = [["Turma", "Data", "Aluno", "Estado"]];
+        var dates = {};
+        Object.keys(state.sessions).forEach(function (k) {
+          if (k.indexOf(cls.id + "|") === 0) dates[k.slice(cls.id.length + 1)] = true;
+        });
+        dates[state.currentDate] = true;
+        Object.keys(dates).sort().forEach(function (date) {
+          var marks = state.sessions[sessionKey(cls.id, date)] || {};
+          cls.students.forEach(function (s) {
+            rows.push([cls.name, date, s.name, labelStatus(marks[s.id] || "absent")]);
+          });
+        });
+        downloadCsv("historico-" + cls.name.replace(/\s+/g, "_") + ".csv", rows);
+      });
+
+      var btn = document.getElementById("theme-toggle");
+      var SUN = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+      var MOON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/></svg>';
+      function paintTheme() {
+        var t = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+        btn.innerHTML = t === "dark" ? SUN : MOON;
+        btn.setAttribute("aria-label", t === "dark" ? "Modo claro" : "Modo escuro");
+      }
+      paintTheme();
+      btn.addEventListener("click", function () {
+        var next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+        paintTheme();
+      });
+
+      render();
+    })();
   </script>
 </body>
 </html>
