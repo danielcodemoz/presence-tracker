@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Presence Tracker · Labs</title>
+  <meta name="description" content="Demo estática de assiduidade — Daniel Marcos Labs." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#0b1014; --panel:#121a21; --line:#243140; --text:#e8eef4; --muted:#8ea0b3; --cyan:#6ec8d4; --green:#3cb371; --red:#e23b3b; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", system-ui, sans-serif; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header, footer {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 14px 22px; background: #0e151b; border-bottom: 1px solid var(--line);
+    }
+    footer { border-bottom: 0; border-top: 1px solid var(--line); margin-top: 28px; color: var(--muted); font-size: 13px; }
+    .brand { font-weight: 700; }
+    .brand span { color: var(--cyan); }
+    .nav { display: flex; gap: 16px; font-size: 14px; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 22px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+    h1 { margin: 0 0 8px; font-size: 26px; }
+    .sub { color: var(--muted); margin: 0 0 18px; }
+    form { display: flex; gap: 8px; margin-bottom: 16px; }
+    input, button { font: inherit; }
+    input { flex: 1; background: #0b1014; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+    button { background: var(--cyan); color: #082026; border: 0; border-radius: 8px; padding: 10px 14px; font-weight: 600; cursor: pointer; }
+    button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    .kpi { background: #18222b; padding: 12px; border-radius: 8px; }
+    .kpi b { display: block; font-size: 22px; }
+    .kpi span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .name { font-weight: 600; }
+    .actions { display: flex; gap: 6px; }
+    .present { color: var(--green); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .absent { color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .empty { color: var(--muted); }
+    @media (max-width: 640px) { .kpis { grid-template-columns: 1fr; } form { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Presence <span>Tracker</span> · Labs</div>
+    <nav class="nav">
+      <a href="https://danielpro.dev">Daniel Marcos · Labs</a>
+      <a href="https://github.com/danielcodemoz/presence-tracker">GitHub</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <div class="panel">
+      <h1>Assiduidade (demo)</h1>
+      <p class="sub">Adicione nomes, marque presente ou ausente. Os dados ficam só neste browser (localStorage) — nada é enviado a um servidor.</p>
+      <div class="kpis">
+        <div class="kpi"><span>Lista</span><b id="nTotal">0</b></div>
+        <div class="kpi"><span>Presentes</span><b id="nPresent">0</b></div>
+        <div class="kpi"><span>Ausentes</span><b id="nAbsent">0</b></div>
+      </div>
+      <form id="addForm">
+        <input id="nameInput" maxlength="80" placeholder="Nome do aluno / participante" autocomplete="off" required />
+        <button type="submit">Adicionar</button>
+        <button type="button" class="ghost" id="clearBtn">Limpar lista</button>
+      </form>
+      <ul id="list"><li class="empty">Ainda não há nomes. Adicione o primeiro.</li></ul>
+    </div>
+  </main>
+  <footer>
+    <div>Daniel Marcos · Labs → <a href="https://danielpro.dev">danielpro.dev</a></div>
+    <div><a href="https://github.com/danielcodemoz/presence-tracker">github.com/danielcodemoz/presence-tracker</a></div>
+  </footer>
+  <script>
+    const KEY = "presence-tracker-labs-v1";
+    const listEl = document.getElementById("list");
+    const form = document.getElementById("addForm");
+    const input = document.getElementById("nameInput");
+    let people = [];
+    try { people = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { people = []; }
+    if (!Array.isArray(people)) people = [];
+
+    function save() { localStorage.setItem(KEY, JSON.stringify(people)); render(); }
+    function render() {
+      const present = people.filter(p => p.status === "present").length;
+      const absent = people.filter(p => p.status === "absent").length;
+      document.getElementById("nTotal").textContent = people.length;
+      document.getElementById("nPresent").textContent = present;
+      document.getElementById("nAbsent").textContent = absent;
+      if (!people.length) {
+        listEl.innerHTML = '<li class="empty">Ainda não há nomes. Adicione o primeiro.</li>';
+        return;
+      }
+      listEl.innerHTML = people.map((p, i) => `
+        <li>
+          <div>
+            <div class="name">${escapeHtml(p.name)}</div>
+            <div class="${p.status === "present" ? "present" : "absent"}">${p.status === "present" ? "PRESENTE" : "AUSENTE"}</div>
+          </div>
+          <div class="actions">
+            <button type="button" data-i="${i}" data-s="present">Presente</button>
+            <button type="button" class="ghost" data-i="${i}" data-s="absent">Ausente</button>
+            <button type="button" class="ghost" data-i="${i}" data-s="remove">Remover</button>
+          </div>
+        </li>`).join("");
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = input.value.trim();
+      if (!name) return;
+      people.push({ name, status: "absent" });
+      input.value = "";
+      save();
+    });
+    listEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-i]");
+      if (!btn) return;
+      const i = Number(btn.dataset.i);
+      const s = btn.dataset.s;
+      if (s === "remove") people.splice(i, 1);
+      else people[i].status = s;
+      save();
+    });
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      if (!people.length) return;
+      if (confirm("Limpar toda a lista deste browser?")) { people = []; save(); }
+    });
+    render();
+  </script>
+</body>
+</html>
