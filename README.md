@@ -1,10 +1,25 @@
 # Presence Tracker
 
-**Ao vivo:** [https://danielcodemoz.github.io/presence-tracker/](https://danielcodemoz.github.io/presence-tracker/)  
-Portfólio: [danielpro.dev](https://danielpro.dev)
+App web de controlo de presenças para eventos e aulas: adicionar nomes, marcar presente/ausente e guardar no `localStorage`. Demo estática em `docs/`.
 
-App web de controlo de presenças. Vite, React, TypeScript.
+**Demo:** https://danielcodemoz.github.io/presence-tracker/
 
-Demo estática em `docs/` (adicionar nomes, marcar presente/ausente, localStorage).
+## Stack
 
-Protótipo. Autor: Daniel Marcos
+- Vite
+- React 18
+- TypeScript
+- Tailwind CSS
+- lucide-react, Recharts, jsPDF, Papa Parse, SheetJS (xlsx)
+
+## Correr localmente
+
+```bash
+npm install && npm run dev
+```
+
+## Autor
+
+Daniel Marcos — consultor de TI em Maputo. Lab público, não é produto de cliente.
+
+https://danielpro.dev
